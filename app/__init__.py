@@ -7,3 +7,5 @@ def create_app():
     app.register_blueprint(expenses_bp)
 
     return app
+
+
