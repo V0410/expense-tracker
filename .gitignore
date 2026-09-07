@@ -1,6 +1,12 @@
 # Python Cache
-__pycache__
+__pycache__/
+*.pyc
 
 #database 
 expenses.db
+
+#virtual env
+.venv/
+
+
 
