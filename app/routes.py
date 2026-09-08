@@ -205,12 +205,11 @@ def delete_expense(expense_id):
         DELETE FROM expenses WHERE id = ?
     """,(expense_id,))
 
-    connection.commit()
-
     if cursor.rowcount == 0:
         connection.close()
         return {"error": "Expense not found"}, 404
 
+    connection.commit()
     connection.close()
 
     return {"message": "Expense deleted successfully"}, 200
