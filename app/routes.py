@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 from app.database import get_db_connection
 from datetime import datetime
+import math
 
 expenses_bp = Blueprint("expenses",__name__)
 
@@ -61,3 +62,86 @@ def get_expenses():
 
     return [dict(expense) for expense in expenses], 200
 
+
+
+@expenses_bp.route("/expenses/<int:expense_id>")
+def get_expense(expense_id):
+    connection = get_db_connection()
+
+    expense = connection.execute("SELECT * FROM expenses WHERE id = ?",(expense_id,)).fetchone()
+
+    connection.close()
+
+    if expense is None:
+        return {"error": "Expense not found"}, 404
+
+    return dict(expense), 200
+
+
+
+@expenses_bp.route("/expenses", methods=["POST"])
+def create_expense():
+    data = request.get_json(silent=True)
+
+    if data is None:
+        return {"error": "Request body must contain JSON object"}, 400
+
+    if not isinstance(data, dict):
+        return {"error": "Request body must be a JSON object"}, 400
+
+    if "name" not in data:
+        return {"error": "Name is required"}, 400
+
+    if "amount" not in data:
+        return {"error": "Amount is required"}, 400
+
+    if "category" not in data:
+        return {"error": "Category is required"}, 400
+
+    if not isinstance(data["name"], str):
+        return {"error": "Name must be a string"}, 400
+
+    if (not isinstance(data["amount"], (int, float)) or isinstance(data["amount"], bool)):
+        return {"error": "Amount must be a number"}, 400
+
+    if not math.isfinite(data["amount"]):
+        return {"error": "Amount must be a finite number"}, 400
+
+    if not isinstance(data["category"], str):
+        return {"error": "Category must be a string"}, 400
+
+    if not data["name"].strip():
+        return {"error": "Name can't be empty"}, 400
+
+    if data["amount"] <= 0:
+        return {"error": "Amount must be greater than Zero"}, 400
+
+    if data["category"] not in allowed_categories:
+        return {"error": "Invalid Category"}, 400
+
+    name = data["name"]
+    amount = data["amount"]
+    category = data["category"]
+    date = datetime.now().strftime("%Y-%m-%d")
+
+    connection = get_db_connection()
+
+    cursor = connection.execute("""
+        INSERT INTO expenses
+        (name, amount, category, date)
+        VALUES
+        (?, ?, ?, ?)
+    """,(name, amount, category, date))
+
+    connection.commit()
+
+    expense_id = cursor.lastrowid
+
+    expense = connection.execute("SELECT * FROM expenses WHERE id = ?",(expense_id, )).fetchone()
+
+    connection.close()
+
+    return {
+        "message": "Expense Created",
+        "expense": dict(expense)
+    }, 201
