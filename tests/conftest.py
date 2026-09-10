@@ -21,7 +21,7 @@ def client(tmp_path):
             (name, amount, category, date)
             VALUES
             (?, ?, ?, ?)
-        """, ("test lunch",  250.0, "food", "2026-09-01"))
+        """, ("Test lunch",  250.0, "food", "2026-09-01"))
 
         connection.execute("""
             INSERT INTO expenses
@@ -32,6 +32,6 @@ def client(tmp_path):
 
         connection.commit()
         connection.close()
-        
+
     with app.test_client() as client:
         yield client

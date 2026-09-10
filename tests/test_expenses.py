@@ -217,3 +217,97 @@ def test_delete_nonexistent_expense(client):
     data = response.get_json()
 
     assert data["error"] == "Expense not found"
+
+
+
+def test_filter_by_category(client):
+    response = client.get("/expenses?category=food")
+
+    assert response.status_code == 200
+
+    expenses = response.get_json()
+
+    assert len(expenses) == 1
+    assert expenses[0]["category"] == "food"
+
+
+
+def test_filter_by_min_amount(client):
+    response = client.get("/expenses?min_amount=100")
+
+    assert response.status_code == 200
+
+    expenses = response.get_json()
+
+    assert len(expenses) == 1
+    assert expenses[0]["amount"] >= 100
+
+
+
+def test_filter_by_month(client):
+    response = client.get("/expenses?month=2026-09")
+
+    assert response.status_code == 200
+
+    expenses = response.get_json()
+
+    assert len(expenses) == 2
+
+
+
+def test_filter_by_multiple_parameters(client):
+    response = client.get("/expenses?category=food&min_amount=200&month=2026-09")
+
+    assert response.status_code == 200
+
+    expenses = response.get_json()
+
+    assert len(expenses) == 1
+    assert expenses[0]["name"] == "Test lunch"
+
+
+
+def test_filter_invalid_category(client):
+    response = client.get("/expenses?category=banana")
+
+    assert response.status_code == 400
+
+    data = response.get_json()
+
+    assert data["error"] == "Invalid Category"
+
+
+
+def test_filter_invalid_min_amount(client):
+    response = client.get("/expenses?min_amount=hello")
+
+    assert response.status_code == 400
+
+
+
+def test_filter_negative_min_amount(client):
+    response = client.get("/expenses?min_amount=-100")
+
+    assert response.status_code == 400
+
+
+
+def test_filter_invalid_month(client):
+    response = client.get("/expenses?month=2026-13")
+
+    assert response.status_code == 400
+
+
+
+def test_filter_invalid_month_format(client):
+    response = client.get("/expenses?month=09")
+
+    assert response.status_code == 400
+
+
+
+def test_filter_with_no_matches(client):
+    response = client.get("/expenses?category=shopping")
+
+    assert response.status_code == 200
+    assert response.get_json() == []
