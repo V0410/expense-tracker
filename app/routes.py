@@ -193,7 +193,7 @@ def update_expense(expense_id):
 
     return {
         "message": "Expense updated successfully",
-        "Expense": dict(updated_expense)
+        "expense": dict(updated_expense)
     }, 200
 
 
