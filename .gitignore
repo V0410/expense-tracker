@@ -1,6 +1,7 @@
 # Python Cache
 __pycache__/
 *.pyc
+.pytest_cache
 
 #database 
 expenses.db

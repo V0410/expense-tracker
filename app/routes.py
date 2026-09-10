@@ -127,7 +127,7 @@ def create_expense():
 
     error = validate_expense(data)
 
-    if data is not None:
+    if error is not None:
         return error, 400
     
     name = data["name"]
