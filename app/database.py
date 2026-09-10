@@ -1,14 +1,22 @@
 import sqlite3
-from flask import current_app
+from flask import current_app, g
 
 
 
 def get_db_connection():
-    connection = sqlite3.connect(
+    if "db" not in g:
+        g.db = sqlite3.connect(
         current_app.config["DATABASE"]
     )
-    connection.row_factory = sqlite3.Row
-    return connection
+        g.db.row_factory = sqlite3.Row
+    return g.db
+
+
+def close_db_connection(exception=None):
+    db = g.pop("db", None)
+
+    if db is not None:
+        db.close()
 
 
 
@@ -26,5 +34,4 @@ def init_db():
     """)
 
     connection.commit()
-    connection.close()
     

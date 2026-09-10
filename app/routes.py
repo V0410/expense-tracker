@@ -100,8 +100,6 @@ def get_expenses():
 
     expenses = connection.execute(query, parameters).fetchall()
 
-    connection.close()
-
     return [dict(expense) for expense in expenses], 200
 
 
@@ -111,8 +109,6 @@ def get_expense(expense_id):
     connection = get_db_connection()
 
     expense = connection.execute("SELECT * FROM expenses WHERE id = ?",(expense_id,)).fetchone()
-
-    connection.close()
 
     if expense is None:
         return {"error": "Expense not found"}, 404
@@ -150,7 +146,6 @@ def create_expense():
 
     expense = connection.execute("SELECT * FROM expenses WHERE id = ?",(expense_id, )).fetchone()
 
-    connection.close()
 
     return {
         "message": "Expense Created",
@@ -189,7 +184,6 @@ def update_expense(expense_id):
 
     updated_expense = connection.execute("SELECT * FROM expenses WHERE id = ?",(expense_id,)).fetchone()
 
-    connection.close()
 
     return {
         "message": "Expense updated successfully",
@@ -210,7 +204,6 @@ def delete_expense(expense_id):
         return {"error": "Expense not found"}, 404
 
     connection.commit()
-    connection.close()
 
     return {"message": "Expense deleted successfully"}, 200
 
