@@ -1,83 +1,107 @@
-# 💰 Expense Tracker CLI
+# Expense Tracker — CLI + REST API
 
-A command-line expense tracking application built with Python and SQLite. It allows users to add, view, update, delete, search, and filter expenses directly from the terminal.
+A Python expense tracker that started as a command-line tool and grew into a Flask REST API backed by SQLite, with a pytest suite covering the API.
 
-Expense data is stored persistently in a local SQLite database, so records remain available between program executions.
+## Features
 
----
+**CLI**
+- Add, view, update, delete, and search expenses
+- Monthly totals and category filtering
+- Dates are recorded automatically
+- Input validation, persistent SQLite storage
 
-## ✨ Features
+**REST API**
+- Full CRUD on expenses (`GET`, `POST`, `PUT`, `DELETE`)
+- Filter by category, minimum amount, or month — combine as needed
+- JSON in, JSON out, with proper HTTP status codes
+- Request validation and parameterized SQL queries
 
-* ✅ Add new expenses
-* ✅ View all saved expenses
-* ✅ Update expense details
-* ✅ Delete individual expenses
-* ✅ Search expenses by name
-* ✅ Calculate monthly expense totals
-* ✅ Filter expenses by category
-* ✅ Automatically record the current date
-* ✅ Input validation for user-friendly interaction
-* ✅ Persistent data storage using SQLite
-* ✅ Simple menu-driven command-line interface
+**Testing**
+- pytest suite using Flask's test client
+- Runs against an isolated temporary database, so tests never touch `expenses.db`
+- Covers CRUD, validation, and all the filter combinations
 
----
+## Tech stack
 
-## 🛠️ Technologies Used
+Python 3.10+, Flask, SQLite, pytest, Git/GitHub. Core modules: `sqlite3`, `datetime`, `flask`, `pytest`.
 
-* Python 3
-* SQLite
-* Python Standard Library
-
-  * `sqlite3`
-  * `datetime`
-
-No external Python packages are required.
-
----
-
-## 📂 Project Structure
+## Project structure
 
 ```text
-expense-tracker-cli/
+expense-tracker/
 │
-├── main.py          # Main application logic and CLI menu
-├── expenses.db      # SQLite database (generated automatically)
-├── .gitignore       # Files excluded from version control
-└── README.md        # Project documentation
+├── app/
+│   ├── __init__.py          # Flask application setup
+│   ├── database.py          # SQLite connection and database helpers
+│   ├── routes.py            # REST API routes
+│   └── validation.py        # Expense validation rules
+│
+├── tests/
+│   ├── conftest.py          # Test database and Flask test client setup
+│   └── test_expenses.py     # API tests
+│
+├── main.py                  # Original CLI application
+├── expenses.db              # SQLite database (generated locally)
+├── requirements.txt         # Python dependencies
+├── .gitignore
+└── README.md
 ```
 
-> `expenses.db` is generated automatically when the application is first run and is excluded from Git.
+`expenses.db` is generated locally and excluded from Git.
 
----
+## Requirements
 
-## 📋 Requirements
+Python 3.10+ and pip. The Flask API and test suite need the packages in `requirements.txt`.
 
-* Python 3.10 or later
+## Installation
 
-No external libraries are required.
-
----
-
-## 🚀 Installation
-
-### 1. Clone the repository
+Clone the repo:
 
 ```bash
-git clone https://github.com/V0410/expense-tracker-cli.git
-cd expense-tracker-cli
+git clone https://github.com/V0410/expense-tracker.git
+cd expense-tracker
 ```
 
-### 2. Run the application
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Windows: `.venv\Scripts\activate`
+macOS/Linux: `source .venv/bin/activate`
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Running the CLI
 
 ```bash
 python main.py
 ```
 
-The SQLite database will be created automatically if it does not already exist.
+The SQLite database is created automatically if it doesn't already exist.
 
----
+## Running the Flask API
 
-## 📖 Menu
+```bash
+flask --app app run --debug
+```
+
+The API runs at `http://127.0.0.1:5000`.
+
+## Running tests
+
+```bash
+python -m pytest
+```
+
+Tests run against a temporary SQLite database, so they won't touch your real `expenses.db`.
+
+## CLI menu
 
 ```text
 ====================
@@ -94,166 +118,226 @@ The SQLite database will be created automatically if it does not already exist.
 8. Exit
 ```
 
----
+## Expense data
 
-## 📊 Expense Information
+| Field | Description |
+|---|---|
+| `id` | Automatically generated unique identifier |
+| `name` | Name of the expense |
+| `amount` | Expense amount |
+| `category` | Expense category |
+| `date` | Automatically recorded date, `YYYY-MM-DD` |
 
-Each expense stores the following information:
+The CLI and REST API share the same SQLite database.
 
-* **ID** — Automatically generated unique identifier
-* **Name** — Name of the expense
-* **Amount** — Expense amount
-* **Category** — Expense category
-* **Date** — Automatically recorded date in `YYYY-MM-DD` format
+## REST API
 
----
+Base URL: `http://127.0.0.1:5000`
 
-## 📸 Example
+### `GET /expenses`
 
-```text
-====================
-   Expense Tracker
-====================
+Returns all expenses.
 
-1. Add Expense
-2. View Expenses
-3. Update Expense
-4. Monthly Total
-5. Delete Expense
-6. Search Expense
-7. Category Filter
-8. Exit
-
-Choose an option: 1
-
-Enter expense name: Groceries
-Enter expense amount: 550
-Enter expense category: Food
-
-Expense added successfully.
+```json
+[
+  {
+    "id": 1,
+    "name": "burger",
+    "amount": 140.0,
+    "category": "food",
+    "date": "2020-08-10"
+  }
+]
 ```
 
-Example expense record:
+`200 OK`
 
-```text
-ID : 1
-Name : Groceries
-Amount : 550.0
-Category : Food
-Date : 2026-08-20
+### `GET /expenses/<id>`
+
+Returns a single expense.
+
+```json
+{
+  "id": 1,
+  "name": "burger",
+  "amount": 140.0,
+  "category": "food",
+  "date": "2020-08-10"
+}
 ```
 
----
+`200 OK`. If the id doesn't exist: `404 Not Found` with `{"error": "Expense not found"}`.
 
-## ⚠️ Error Handling
+### `POST /expenses`
 
-The application handles common user input errors, including:
-
-* Invalid menu choices
-* Invalid expense amounts
-* Invalid expense IDs
-* Attempts to update or delete an expense that does not exist
-* Empty expense results when viewing, searching, or filtering
-
----
-
-## 🗄️ SQLite Database
-
-The application uses SQLite through Python's built-in `sqlite3` module.
-
-The database contains an `expenses` table with the following structure:
-
-```text
-expenses
-├── id
-├── name
-├── amount
-├── category
-└── date
+```http
+POST /expenses
+Content-Type: application/json
 ```
 
-SQL operations practiced in this project include:
-
-* `CREATE TABLE`
-* `INSERT`
-* `SELECT`
-* `UPDATE`
-* `DELETE`
-* `WHERE`
-* `LIKE`
-* `SUM`
-
-Parameterized SQL queries are used when inserting and modifying user-provided data.
-
----
-
-## 📚 What I Learned
-
-This project helped me practice:
-
-* Python functions
-* Exception handling
-* Loops and conditional logic
-* User input validation
-* CRUD operations
-* SQL fundamentals
-* SQLite database integration with Python
-* Parameterized SQL queries
-* Fetching database records with `fetchone()` and `fetchall()`
-* Aggregate queries using `SUM()`
-* Searching with `LIKE`
-* Filtering data with `WHERE`
-* Menu-driven CLI application design
-* Refactoring repeated code into reusable functions
-* Git and GitHub workflow
-
----
-
-## 🔄 Project Evolution
-
-This project originally used JSON file storage.
-
-It was later upgraded to SQLite to provide a more structured and scalable approach to persistent data storage.
-
-```text
-JSON File Storage
-       ↓
-SQLite Database
+```json
+{
+  "name": "Coffee",
+  "amount": 120.50,
+  "category": "food"
+}
 ```
 
-This migration also provided practical experience with SQL and database-driven application design.
+`id` and `date` are generated server-side.
 
----
+```json
+{
+  "message": "Expense created",
+  "expense": {
+    "id": 2,
+    "name": "Coffee",
+    "amount": 120.5,
+    "category": "food",
+    "date": "2026-09-11"
+  }
+}
+```
 
-## 🚀 Future Improvements
+`201 Created`
 
-Possible future improvements include:
+### `PUT /expenses/<id>`
 
-* Flask web interface
-* REST API
-* User authentication
-* CSV export
-* Docker containerization
-* PostgreSQL database
-* Cloud deployment
-* Automated testing
+```http
+PUT /expenses/1
+Content-Type: application/json
+```
 
----
+```json
+{
+  "name": "Dinner",
+  "amount": 350.50,
+  "category": "food"
+}
+```
 
-## 🤝 Contributing
+`id` and `date` stay unchanged.
 
-This project was created for learning purposes, but suggestions and improvements are welcome.
+```json
+{
+  "message": "Expense updated successfully",
+  "expense": {
+    "id": 1,
+    "name": "Dinner",
+    "amount": 350.5,
+    "category": "food",
+    "date": "2020-08-10"
+  }
+}
+```
 
----
+`200 OK`
 
-## 📄 License
+### `DELETE /expenses/<id>`
 
-This project is intended for educational purposes.
+```json
+{
+  "message": "Expense deleted successfully"
+}
+```
 
----
+`200 OK`. If the id doesn't exist: `404 Not Found` with `{"error": "Expense not found"}`.
 
-## 👨‍💻 Author
+## Filtering
+
+`GET /expenses` takes optional query parameters, which can be combined.
+
+**Category**
+```http
+GET /expenses?category=food
+```
+Allowed values: `food`, `transport`, `shopping`, `bills`, `other`.
+
+**Minimum amount**
+```http
+GET /expenses?min_amount=100.50
+```
+Returns expenses with an amount ≥ 100.50.
+
+**Month** (`YYYY-MM`)
+```http
+GET /expenses?month=2026-09
+```
+
+**Combined**
+```http
+GET /expenses?category=food&min_amount=100.50&month=2026-09
+```
+
+## Validation
+
+- `name` — required string, can't be empty or whitespace-only
+- `amount` — required number, must be finite and greater than zero
+- `category` — required, must be one of `food`, `transport`, `shopping`, `bills`, `other`
+
+Invalid input returns `400 Bad Request`.
+
+## HTTP status codes
+
+| Status | Meaning |
+|---|---|
+| `200` | Request completed successfully |
+| `201` | Expense created |
+| `400` | Invalid client input |
+| `404` | Expense not found |
+| `405` | Method not allowed for the route |
+
+## Database
+
+SQLite via Python's `sqlite3` module, with a single `expenses` table (`id`, `name`, `amount`, `category`, `date`). All user-provided values go through parameterized queries.
+
+## Testing
+
+pytest with Flask's test client, run against a temporary database so test runs never affect real data. Covers retrieval, creation, updates, deletion, missing resources, invalid input, and every filter combination.
+
+```bash
+python -m pytest
+```
+
+## What I learned
+
+This started as a plain JSON-file CLI tool, then moved to SQLite once parsing files by hand got old. From there I wrapped the same database in a Flask API and added a pytest suite on top.
+
+Along the way: writing and refactoring CLI logic in Python, exception handling and input validation, SQLite CRUD (`CREATE TABLE`, `INSERT`, `SELECT`, `UPDATE`, `DELETE`, `WHERE`, `LIKE`, `SUM`) with parameterized queries, Flask app structure and application factories, routing with dynamic URL and query parameters, JSON request/response handling, and testing an API with pytest fixtures and an isolated test database. Also picked up better Git habits along the way — branching, smaller commits, working feature by feature instead of one giant push.
+
+## Project evolution
+
+JSON files → SQLite-backed CLI → Flask REST API on the same database → pytest suite with its own isolated test database.
+
+```text
+                    Expense Tracker
+                          │
+               ┌──────────┴──────────┐
+               │                     │
+           CLI Interface         REST API
+               │                     │
+            main.py                Flask
+               │                     │
+               └──────────┬──────────┘
+                          ↓
+                       SQLite
+                          │
+                          ↓
+                     pytest tests
+```
+
+## Future improvements
+
+Authentication, pagination, sorting, better search, OpenAPI/Swagger docs, Docker, a move to PostgreSQL, and eventually cloud deployment with a proper WSGI server and CI/CD.
+
+## Contributing
+
+Built mainly for learning and as a portfolio piece, but suggestions are welcome.
+
+## License
+
+Educational use.
+
+## Author
 
 **Vansh Gokhale**
-
 Aspiring Python Backend & Cloud Engineer
