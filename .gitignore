@@ -9,5 +9,6 @@ expenses.db
 #virtual env
 .venv/
 
+.env
 
 

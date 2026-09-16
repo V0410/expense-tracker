@@ -1,11 +1,12 @@
 from flask import Flask
 from app.database import close_db_connection
+from app.config import Config, DevelopmentConfig, TestingConfig, ProductionConfig
 
 
-def create_app():
+def create_app(config=DevelopmentConfig):
     app = Flask(__name__)
 
-    app.config["DATABASE"] = "expenses.db"
+    app.config.from_object(config)
 
     app.teardown_appcontext(close_db_connection)
 

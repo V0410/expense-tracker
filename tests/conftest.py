@@ -1,14 +1,14 @@
 from app import create_app
 import pytest
 from app.database import init_db, get_db_connection
+from app.config import TestingConfig
 
 @pytest.fixture
 def client(tmp_path):
     db_path = tmp_path / "test_expenses.db"
 
-    app = create_app()
+    app = create_app(TestingConfig)
 
-    app.config["TESTING"] = True
     app.config["DATABASE"] = str(db_path)
 
     with app.app_context():
