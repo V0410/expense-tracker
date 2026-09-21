@@ -251,7 +251,7 @@ def test_filter_by_month(client):
 
     expenses = response.get_json()
 
-    assert len(expenses) == 2
+    assert len(expenses) == 1
 
 
 
@@ -311,3 +311,155 @@ def test_filter_with_no_matches(client):
 
     assert response.status_code == 200
     assert response.get_json() == []
+
+
+from app.extensions import db
+from app.models import Expense
+
+
+def test_sqlalchemy_can_read_expenses(client):
+    with client.application.app_context():
+
+        statement = db.select(Expense)
+
+        result = db.session.execute(statement)
+
+        expenses = result.scalars().all()
+
+    assert len(expenses) >= 1
+    assert expenses[0].name
+    assert isinstance(expenses[0], Expense)
+
+
+
+def test_sqlalchemy_can_create_expense(client):
+    with client.application.app_context():
+
+        expense = Expense(
+            name="test lunch",
+            amount=250,
+            category="food",
+            date="2026-09-15"
+        )
+
+        db.session.add(expense)
+
+        db.session.commit()
+
+        statement = db.select(Expense).where(
+            Expense.name=="test lunch"
+        )
+
+        result = db.session.execute(statement)
+
+        expense = result.scalar_one()
+
+        assert expense.name == "test lunch"
+        assert expense.amount == 250
+
+
+
+def test_sqlalchemy_rollback(client):
+    with client.application.app_context():
+        expense = Expense(
+            name="test dinner",
+            amount=230,
+            category="food",
+            date="2026-09-16"
+        )
+
+        db.session.add(expense)
+
+        db.session.flush()
+
+        statement = db.select(Expense).where(
+                    Expense.name =="test dinner"
+                )
+        
+        result = db.session.execute(statement)
+
+        expense = result.scalar_one_or_none()
+
+        assert expense is not None
+        assert expense.name == "test dinner"
+
+        db.session.rollback()
+
+        statement = db.select(Expense).where(
+            Expense.name =="test dinner"
+        )
+
+        result = db.session.execute(statement)
+
+        expense = result.scalar_one_or_none()
+
+        assert expense is None
+
+
+
+def test_sqlalchemy_can_update_expense(client):
+    with client.application.app_context():
+
+        expense = Expense(
+            name="test breakfast",
+            amount=300,
+            category="food",
+            date="2026-09-12"
+        )
+
+        db.session.add(expense)
+
+        db.session.commit()
+
+        statement = db.select(Expense).where(
+            Expense.name=="test breakfast"
+        )
+
+        expense = db.session.execute(statement).scalar_one()
+
+        expense.amount = 500
+
+        db.session.commit()
+
+        statement = db.select(Expense).where(
+                    Expense.name=="test breakfast"
+                )
+        
+        expense = db.session.execute(statement).scalar_one()
+
+        assert expense.name == "test breakfast"
+        assert expense.amount == 500
+
+        
+
+def test_sqlalchemy_can_delete_expense(client):
+    with client.application.app_context():
+        expense = Expense(
+            name="test beer",
+            amount=150,
+            category="drink",
+            date="2026-09-05"
+        )
+
+        db.session.add(expense)
+        db.session.commit()
+
+        statement = db.select(Expense).where(
+            Expense.name=="test beer"
+        )
+
+        expense = db.session.execute(statement).scalar_one()
+
+        assert expense is not None
+
+        db.session.delete(expense)
+
+        db.session.commit()
+
+        statement = db.select(Expense).where(
+            Expense.name=="test beer"
+                )
+        
+        expense = db.session.execute(statement).scalar_one_or_none()
+
+        assert expense is None

@@ -1,37 +1,31 @@
 from app import create_app
 import pytest
-from app.database import init_db, get_db_connection
 from app.config import TestingConfig
+from app.extensions import db
+from app.models import Expense
 
 @pytest.fixture
 def client(tmp_path):
     db_path = tmp_path / "test_expenses.db"
 
-    app = create_app(TestingConfig)
-
-    app.config["DATABASE"] = str(db_path)
+    app = create_app(TestingConfig, db_path)
 
     with app.app_context():
-        init_db()
 
-        connection = get_db_connection()
+        db.create_all()
 
-        connection.execute("""
-            INSERT INTO expenses
-            (name, amount, category, date)
-            VALUES
-            (?, ?, ?, ?)
-        """, ("Test lunch",  250.0, "food", "2026-09-01"))
+        expense = Expense(
+            name="Test lunch",
+            amount=250,
+            category="food",
+            date="2026-09-15"
+        )
 
-        connection.execute("""
-            INSERT INTO expenses
-            (name, amount, category, date)
-            VALUES
-            (?, ?, ?, ?)
-        """, ("Test bus", 40.0, "transport", "2026-09-02"))
+        db.session.add(expense)
 
-        connection.commit()
-        connection.close()
+        db.session.commit()
 
-    with app.test_client() as client:
-        yield client
+        with app.test_client() as client:
+            yield client
+
+        db.session.remove()
