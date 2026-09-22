@@ -11,4 +11,6 @@ instance/
 
 .env
 
+tests.db
+
 
