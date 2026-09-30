@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from datetime import datetime
-from app.validation import validate_expense,allowed_categories
+from app.validation import validate_expense,allowed_categories, validate_user
 from app.extensions import db
 from app.models import Expense
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -117,7 +117,7 @@ def create_expense():
     if error is not None:
         return error, 400
     
-    name = data["name"]
+    name = data["name"].strip()
     amount = data["amount"]
     category = data["category"]
     date = datetime.now().strftime("%Y-%m-%d")
@@ -227,16 +227,12 @@ def delete_expense(expense_id):
 def register_user():
     data = request.get_json(silent=True)
 
-    if data is None:
-        return {"error": "User Name and Password is required"}, 400
+    error = validate_user(data)
 
-    if "user_name" not in data:
-        return {"error": "User Name is required"}, 400
-
-    if "password" not in data:
-        return {"error": "Password is required"}, 400
-
-    user_name = data["user_name"]
+    if error is not None:
+        return error, 400
+    
+    user_name = data["user_name"].strip()
     password = data["password"]
 
     statement = db.select(User).where(User.user_name == user_name)
@@ -263,16 +259,12 @@ def register_user():
 def login_user():
     data = request.get_json(silent=True)
 
-    if data is None:
-        return {"error": "Credentials are required"}, 400
+    error = validate_user(data)
 
-    if "user_name" not in data:
-        return {"error": "user_name is required"}, 400
+    if error is not None:
+        return error, 400
 
-    if "password" not in data:
-        return {"error": "password is required"}, 400
-
-    user_name = data["user_name"]
+    user_name = data["user_name"].strip()
     password = data["password"]
 
     statement = db.select(User).where(User.user_name == user_name)

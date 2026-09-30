@@ -44,3 +44,33 @@ def validate_expense(data):
         return {"error": "Invalid Category"}
 
     return None
+
+
+
+def validate_user(data):
+
+    if data is None:
+        return {"error": "Request body must contain JSON object"}
+
+    if not isinstance(data, dict):
+        return {"error": "Request body must be a JSON object"}
+
+    if "user_name" not in data:
+            return {"error": "User Name is required"}
+    
+    if "password" not in data:
+        return {"error": "Password is required"}
+
+    if not isinstance(data["user_name"], str):
+        return {"error": "User Name must be a string"}
+
+    if not isinstance(data["password"], str):
+        return {"error": "Password must be a string"}
+
+    if not data["user_name"].strip():
+        return {"error": "User Name can't be empty"}
+    
+    if not data["password"].strip():
+        return {"error": "Password can't be empty"}
+
+    return None

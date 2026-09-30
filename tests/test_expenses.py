@@ -609,3 +609,117 @@ def test_login_with_wrong_password(client):
         )
 
     assert response.status_code == 401
+
+
+def test_normalize_name(client, auth_headers):
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "   Burger   ",
+            "amount": 240,
+            "category": "food"
+        }
+    )
+
+    assert response.status_code == 201
+
+    data = response.get_json()
+
+    assert data["expense"]["name"] == "Burger"
+
+
+def test_json_array_is_rejected(client, auth_headers):
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = []
+    ) 
+
+    assert response.status_code == 400
+
+    data = response.get_json()
+
+    assert data["error"] == "Request body must be a JSON object"
+
+
+
+def test_extra_field_is_ignored(client, auth_headers):
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "Burger",
+            "amount": 240,
+            "category": "food",
+            "something_random": "hello"
+        }
+    )
+
+    assert response.status_code == 201
+
+    data = response.get_json()
+
+    assert "something_random" not in data["expense"].keys()
+
+
+
+def test_register_without_username(client):
+    response = client.post(
+        "/register",
+        json = {
+            "password": "123"
+        }
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "User Name is required"
+
+
+
+def test_register_without_password(client):
+    response = client.post(
+        "/register",
+        json = {
+            "user_name": "123"
+        }
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Password is required"
+
+
+def test_register_with_username_wrong_type(client):
+    response = client.post(
+        "/register",
+        json = {
+            "user_name": 123,
+            "password": "123"
+        }
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "User Name must be a string"
+
+
+def test_empty_username(client):
+    response = client.post(
+        "/register",
+        json = {
+            "user_name": "    ",
+            "password": "123"
+        }
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "User Name can't be empty"
+
+
+def test_empty_password(client):
+    response = client.post(
+        "/register",
+        json = {
+            "user_name": "123",
+            "password": "   "
+        }
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Password can't be empty"
