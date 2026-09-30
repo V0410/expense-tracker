@@ -6,6 +6,7 @@ from app.models import Expense
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask import current_app
 
 
 expenses_bp = Blueprint("expenses",__name__)
@@ -278,14 +279,18 @@ def login_user():
     user_exists = db.session.execute(statement).scalar_one_or_none()
 
     if user_exists is None:
+        current_app.logger.warning(f"Failed login attempt for unknown user '{user_name}'")
         return {"error": "Invalid Credentials"}, 401
 
     stored_password_hash = user_exists.password_hash
 
     if not check_password_hash(stored_password_hash, password):
+        current_app.logger.warning(f"Failed login attempt for user '{user_name}'")
         return {"error": "Invalid Credentials"}, 401
 
     access_token = create_access_token(identity=str(user_exists.id))
+
+    current_app.logger.info(f"User '{user_name}' logged in successfully")
 
     return {
         "message": "Login successful",

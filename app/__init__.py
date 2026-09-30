@@ -25,6 +25,7 @@ def create_app(config=DevelopmentConfig, db_path=None):
         if isinstance(error, HTTPException):
             return error
         else:
+            app.logger.exception("Something went wrong")
             return {"error": "Internal server error"}, 500
 
     # blueprints

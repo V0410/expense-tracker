@@ -597,3 +597,15 @@ def test_user_cannot_delete_other_users_expense(client):
         result = db.session.execute(statement).scalar_one_or_none()
 
         assert result is not None
+
+
+def test_login_with_wrong_password(client):
+    response = client.post(
+        "/login",
+        json = {
+            "user_name": "testuser",
+            "password": "test-has"
+            }
+        )
+
+    assert response.status_code == 401
