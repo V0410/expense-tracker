@@ -1,343 +1,452 @@
-# Expense Tracker — CLI + REST API
+# Expense Tracker API
 
-A Python expense tracker that started as a command-line tool and grew into a Flask REST API backed by SQLite, with a pytest suite covering the API.
+A backend REST API for managing personal expenses, built with **Python, Flask, SQLAlchemy, and SQLite**. The project includes CRUD operations, request validation, filtering, automated testing, and database migrations.
 
-## Features
+The project originally started as a command-line expense tracker and was progressively developed into a REST API to practice real-world backend development concepts.
 
-**CLI**
-- Add, view, update, delete, and search expenses
-- Monthly totals and category filtering
-- Dates are recorded automatically
-- Input validation, persistent SQLite storage
+## 🚀 Features
 
-**REST API**
-- Full CRUD on expenses (`GET`, `POST`, `PUT`, `DELETE`)
-- Filter by category, minimum amount, or month — combine as needed
-- JSON in, JSON out, with proper HTTP status codes
-- Request validation and parameterized SQL queries
+### REST API
+- Create, read, update, and delete expenses
+- Retrieve a single expense by ID
+- JSON request and response handling
+- Proper HTTP status codes
+- Query parameter-based filtering
 
-**Testing**
-- pytest suite using Flask's test client
-- Runs against an isolated temporary database, so tests never touch `expenses.db`
-- Covers CRUD, validation, and all the filter combinations
+### Filtering
+Expenses can be filtered by:
+- Category
+- Minimum amount
+- Month
+- Multiple filters at the same time
 
-## Tech stack
+Example:
 
-Python 3.10+, Flask, SQLite, pytest, Git/GitHub. Core modules: `sqlite3`, `datetime`, `flask`, `pytest`.
+```http
+GET /expenses?category=food&min_amount=100&month=2026-09
+```
 
-## Project structure
+### Validation
+- Validates request body structure
+- Required field validation
+- Data type validation
+- Empty/whitespace input validation
+- Expense amount validation
+- Category validation
+- Invalid requests return appropriate `400 Bad Request` responses
+
+### Database
+- SQLite database
+- SQLAlchemy ORM
+- Database migrations
+- Persistent expense storage
+- Database schema managed through migrations
+
+### Authentication
+- User registration
+- User login
+- Password hashing
+- Input validation for authentication requests
+
+### Testing
+- Automated tests using `pytest`
+- Flask test client
+- Isolated test database
+- Tests for CRUD operations
+- Validation tests
+- Authentication validation tests
+- Query parameter and filtering tests
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Backend programming |
+| Flask | REST API framework |
+| SQLAlchemy | ORM / database interaction |
+| SQLite | Database |
+| Alembic / Flask-Migrate | Database migrations |
+| Pytest | Automated testing |
+| Git | Version control |
+| GitHub | Code hosting |
+
+---
+
+## 📂 Project Structure
 
 ```text
 expense-tracker/
 │
 ├── app/
 │   ├── __init__.py          # Flask application setup
-│   ├── database.py          # SQLite connection and database helpers
-│   ├── routes.py            # REST API routes
-│   └── validation.py        # Expense validation rules
+│   ├── database.py          # Database configuration/helpers
+│   ├── routes.py            # API routes
+│   └── validation.py        # Request validation
+│
+├── migrations/              # Database migration files
 │
 ├── tests/
-│   ├── conftest.py          # Test database and Flask test client setup
+│   ├── conftest.py          # Test configuration and fixtures
 │   └── test_expenses.py     # API tests
 │
 ├── main.py                  # Original CLI application
-├── expenses.db              # SQLite database (generated locally)
-├── requirements.txt         # Python dependencies
+├── requirements.txt         # Project dependencies
 ├── .gitignore
 └── README.md
 ```
 
-`expenses.db` is generated locally and excluded from Git.
+---
 
-## Requirements
+## ⚙️ Getting Started
 
-Python 3.10+ and pip. The Flask API and test suite need the packages in `requirements.txt`.
-
-## Installation
-
-Clone the repo:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/V0410/expense-tracker.git
 cd expense-tracker
 ```
 
-Create and activate a virtual environment:
+### 2. Create a virtual environment
 
 ```bash
 python -m venv .venv
 ```
 
-Windows: `.venv\Scripts\activate`
-macOS/Linux: `source .venv/bin/activate`
+### 3. Activate the virtual environment
 
-Install dependencies:
+**Windows:**
+
+```bash
+.venv\Scripts\activate
+```
+
+**macOS/Linux:**
+
+```bash
+source .venv/bin/activate
+```
+
+### 4. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Running the CLI
+### 5. Configure the database
+
+The project uses SQLite for local development.
+
+Apply the database migrations:
 
 ```bash
-python main.py
+flask --app app db upgrade
 ```
 
-The SQLite database is created automatically if it doesn't already exist.
-
-## Running the Flask API
+### 6. Run the API
 
 ```bash
 flask --app app run --debug
 ```
 
-The API runs at `http://127.0.0.1:5000`.
-
-## Running tests
-
-```bash
-python -m pytest
-```
-
-Tests run against a temporary SQLite database, so they won't touch your real `expenses.db`.
-
-## CLI menu
+The API will be available at:
 
 ```text
-====================
-   Expense Tracker
-====================
-
-1. Add Expense
-2. View Expenses
-3. Update Expense
-4. Monthly Total
-5. Delete Expense
-6. Search Expense
-7. Category Filter
-8. Exit
+http://127.0.0.1:5000
 ```
 
-## Expense data
+---
 
-| Field | Description |
-|---|---|
-| `id` | Automatically generated unique identifier |
-| `name` | Name of the expense |
-| `amount` | Expense amount |
-| `category` | Expense category |
-| `date` | Automatically recorded date, `YYYY-MM-DD` |
+# 📡 API Endpoints
 
-The CLI and REST API share the same SQLite database.
+## Get all expenses
 
-## REST API
+```http
+GET /expenses
+```
 
-Base URL: `http://127.0.0.1:5000`
-
-### `GET /expenses`
-
-Returns all expenses.
+Example response:
 
 ```json
 [
-  {
-    "id": 1,
-    "name": "burger",
-    "amount": 140.0,
-    "category": "food",
-    "date": "2020-08-10"
-  }
+    {
+        "id": 1,
+        "name": "Coffee",
+        "amount": 120.5,
+        "category": "food",
+        "date": "2026-09-11"
+    }
 ]
 ```
 
-`200 OK`
+---
 
-### `GET /expenses/<id>`
-
-Returns a single expense.
-
-```json
-{
-  "id": 1,
-  "name": "burger",
-  "amount": 140.0,
-  "category": "food",
-  "date": "2020-08-10"
-}
-```
-
-`200 OK`. If the id doesn't exist: `404 Not Found` with `{"error": "Expense not found"}`.
-
-### `POST /expenses`
+## Get a single expense
 
 ```http
-POST /expenses
-Content-Type: application/json
+GET /expenses/<id>
 ```
+
+Example:
+
+```http
+GET /expenses/1
+```
+
+Returns:
 
 ```json
 {
-  "name": "Coffee",
-  "amount": 120.50,
-  "category": "food"
-}
-```
-
-`id` and `date` are generated server-side.
-
-```json
-{
-  "message": "Expense created",
-  "expense": {
-    "id": 2,
+    "id": 1,
     "name": "Coffee",
     "amount": 120.5,
     "category": "food",
     "date": "2026-09-11"
-  }
 }
 ```
 
-`201 Created`
+Returns `404 Not Found` if the expense does not exist.
 
-### `PUT /expenses/<id>`
+---
+
+## Create an expense
 
 ```http
-PUT /expenses/1
-Content-Type: application/json
+POST /expenses
 ```
+
+Request:
 
 ```json
 {
-  "name": "Dinner",
-  "amount": 350.50,
-  "category": "food"
+    "name": "Coffee",
+    "amount": 120.50,
+    "category": "food"
 }
 ```
 
-`id` and `date` stay unchanged.
+The server generates the ID and date.
+
+Response:
 
 ```json
 {
-  "message": "Expense updated successfully",
-  "expense": {
-    "id": 1,
+    "message": "Expense created",
+    "expense": {
+        "id": 1,
+        "name": "Coffee",
+        "amount": 120.5,
+        "category": "food",
+        "date": "2026-09-11"
+    }
+}
+```
+
+Status:
+
+```text
+201 Created
+```
+
+---
+
+## Update an expense
+
+```http
+PUT /expenses/<id>
+```
+
+Request:
+
+```json
+{
     "name": "Dinner",
-    "amount": 350.5,
-    "category": "food",
-    "date": "2020-08-10"
-  }
+    "amount": 350.50,
+    "category": "food"
 }
 ```
 
-`200 OK`
+The expense ID and original date remain unchanged.
 
-### `DELETE /expenses/<id>`
+---
+
+## Delete an expense
+
+```http
+DELETE /expenses/<id>
+```
+
+Example:
+
+```http
+DELETE /expenses/1
+```
+
+Response:
 
 ```json
 {
-  "message": "Expense deleted successfully"
+    "message": "Expense deleted successfully"
 }
 ```
 
-`200 OK`. If the id doesn't exist: `404 Not Found` with `{"error": "Expense not found"}`.
+---
 
-## Filtering
+# 🔎 Filtering
 
-`GET /expenses` takes optional query parameters, which can be combined.
+The `GET /expenses` endpoint supports optional query parameters.
 
-**Category**
+### Filter by category
+
 ```http
 GET /expenses?category=food
 ```
-Allowed values: `food`, `transport`, `shopping`, `bills`, `other`.
 
-**Minimum amount**
-```http
-GET /expenses?min_amount=100.50
+Available categories:
+
+```text
+food
+transport
+shopping
+bills
+other
 ```
-Returns expenses with an amount ≥ 100.50.
 
-**Month** (`YYYY-MM`)
+### Filter by minimum amount
+
+```http
+GET /expenses?min_amount=100
+```
+
+Returns expenses where:
+
+```text
+amount >= 100
+```
+
+### Filter by month
+
 ```http
 GET /expenses?month=2026-09
 ```
 
-**Combined**
+### Combine filters
+
 ```http
-GET /expenses?category=food&min_amount=100.50&month=2026-09
+GET /expenses?category=food&min_amount=100&month=2026-09
 ```
 
-## Validation
+---
 
-- `name` — required string, can't be empty or whitespace-only
-- `amount` — required number, must be finite and greater than zero
-- `category` — required, must be one of `food`, `transport`, `shopping`, `bills`, `other`
+# 🔐 Authentication
 
-Invalid input returns `400 Bad Request`.
+The API includes basic user authentication functionality.
 
-## HTTP status codes
+### Register
 
-| Status | Meaning |
-|---|---|
-| `200` | Request completed successfully |
-| `201` | Expense created |
-| `400` | Invalid client input |
-| `404` | Expense not found |
-| `405` | Method not allowed for the route |
+```http
+POST /register
+```
 
-## Database
+### Login
 
-SQLite via Python's `sqlite3` module, with a single `expenses` table (`id`, `name`, `amount`, `category`, `date`). All user-provided values go through parameterized queries.
+```http
+POST /login
+```
 
-## Testing
+User input is validated before processing, and passwords are stored using password hashing rather than plain text.
 
-pytest with Flask's test client, run against a temporary database so test runs never affect real data. Covers retrieval, creation, updates, deletion, missing resources, invalid input, and every filter combination.
+---
+
+# 🧪 Testing
+
+Run the complete test suite with:
 
 ```bash
 python -m pytest
 ```
 
-## What I learned
+The tests use an isolated database so that testing does not modify the application's development database.
 
-This started as a plain JSON-file CLI tool, then moved to SQLite once parsing files by hand got old. From there I wrapped the same database in a Flask API and added a pytest suite on top.
+The test suite covers areas including:
 
-Along the way: writing and refactoring CLI logic in Python, exception handling and input validation, SQLite CRUD (`CREATE TABLE`, `INSERT`, `SELECT`, `UPDATE`, `DELETE`, `WHERE`, `LIKE`, `SUM`) with parameterized queries, Flask app structure and application factories, routing with dynamic URL and query parameters, JSON request/response handling, and testing an API with pytest fixtures and an isolated test database. Also picked up better Git habits along the way — branching, smaller commits, working feature by feature instead of one giant push.
+- Expense CRUD operations
+- Request validation
+- Invalid input handling
+- Filtering
+- User registration validation
+- Login validation
+- JSON payload validation
 
-## Project evolution
+---
 
-JSON files → SQLite-backed CLI → Flask REST API on the same database → pytest suite with its own isolated test database.
+# 🗄️ Database Migrations
 
-```text
-                    Expense Tracker
-                          │
-               ┌──────────┴──────────┐
-               │                     │
-           CLI Interface         REST API
-               │                     │
-            main.py                Flask
-               │                     │
-               └──────────┬──────────┘
-                          ↓
-                       SQLite
-                          │
-                          ↓
-                     pytest tests
+Database schema changes are managed through migrations.
+
+This allows the database structure to evolve without manually recreating the database whenever the application's models change.
+
+To apply existing migrations:
+
+```bash
+flask --app app db upgrade
 ```
 
-## Future improvements
+---
 
-Authentication, pagination, sorting, better search, OpenAPI/Swagger docs, Docker, a move to PostgreSQL, and eventually cloud deployment with a proper WSGI server and CI/CD.
+# 📋 HTTP Status Codes
 
-## Contributing
+| Status Code | Meaning |
+|---|---|
+| `200 OK` | Request completed successfully |
+| `201 Created` | Resource successfully created |
+| `400 Bad Request` | Invalid client input |
+| `404 Not Found` | Requested resource does not exist |
+| `405 Method Not Allowed` | HTTP method is not supported for the route |
 
-Built mainly for learning and as a portfolio piece, but suggestions are welcome.
+---
 
-## License
+# 🎯 What I Practiced
 
-Educational use.
+This project was built progressively to practice backend development concepts including:
 
-## Author
+- Python backend development
+- REST API design
+- HTTP methods and status codes
+- Flask routing
+- Request and response handling
+- Query parameters
+- Input validation
+- SQL and database interaction
+- SQLAlchemy ORM
+- Database migrations
+- Password hashing
+- Automated testing
+- Test databases and fixtures
+- Git and GitHub
+- Project structure and backend organization
+
+---
+
+## 📌 Future Improvements
+
+Potential future improvements include:
+
+- JWT-based authentication
+- Pagination
+- Expense summaries and reporting endpoints
+- PostgreSQL support
+- API documentation with Swagger/OpenAPI
+- Docker containerization
+- CI/CD with GitHub Actions
+- Cloud deployment
+
+---
+
+## 👨‍💻 Author
 
 **Vansh Gokhale**
-Aspiring Python Backend & Cloud Engineer
+
+GitHub:  
+https://github.com/V0410
