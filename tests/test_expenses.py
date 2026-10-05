@@ -723,3 +723,26 @@ def test_empty_password(client):
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "Password can't be empty"
+
+
+import time
+from datetime import timedelta
+
+def test_expired_jwt_is_rejected(client):
+    with client.application.app_context():
+        user_id = client.application.config["TEST_USER_ID"]
+
+        token = create_access_token(
+            identity=str(user_id),
+            expires_delta=timedelta(seconds=1)
+        )
+
+        time.sleep(2)
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = client.get("/me", headers=headers)
+
+        assert response.status_code == 401
