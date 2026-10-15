@@ -225,10 +225,10 @@ def test_filter_by_category(client, auth_headers):
 
     assert response.status_code == 200
 
-    expenses = response.get_json()
+    data = response.get_json()
 
-    assert len(expenses) == 1
-    assert expenses[0]["category"] == "food"
+    assert len(data["expenses"]) == 1
+    assert data["expenses"][0]["category"] == "food"
 
 
 
@@ -237,10 +237,10 @@ def test_filter_by_min_amount(client, auth_headers):
 
     assert response.status_code == 200
 
-    expenses = response.get_json()
+    data = response.get_json()
 
-    assert len(expenses) == 1
-    assert expenses[0]["amount"] >= 100
+    assert len(data["expenses"]) == 1
+    assert data["expenses"][0]["amount"] >= 100
 
 
 
@@ -249,9 +249,9 @@ def test_filter_by_month(client, auth_headers):
 
     assert response.status_code == 200
 
-    expenses = response.get_json()
+    data = response.get_json()
 
-    assert len(expenses) == 1
+    assert len(data["expenses"]) == 1
 
 
 
@@ -260,10 +260,10 @@ def test_filter_by_multiple_parameters(client, auth_headers):
 
     assert response.status_code == 200
 
-    expenses = response.get_json()
+    data = response.get_json()
 
-    assert len(expenses) == 1
-    assert expenses[0]["name"] == "Test lunch"
+    assert len(data["expenses"]) == 1
+    assert data["expenses"][0]["name"] == "Test lunch"
 
 
 
@@ -309,8 +309,12 @@ def test_filter_invalid_month_format(client, auth_headers):
 def test_filter_with_no_matches(client, auth_headers):
     response = client.get("/expenses?category=shopping", headers=auth_headers)
 
+    data = response.get_json()
+
     assert response.status_code == 200
-    assert response.get_json() == []
+    assert data["expenses"] == []
+    assert data["pagination"]["total"] == 0
+    assert data["pagination"]["pages"] == 0
 
 
 from app.extensions import db
@@ -746,3 +750,364 @@ def test_expired_jwt_is_rejected(client):
         response = client.get("/me", headers=headers)
 
         assert response.status_code == 401
+
+
+
+def test_default_pagination(client, auth_headers):
+    client.delete("/expenses/1", headers = auth_headers)
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "pizza",
+            "amount": 240,
+            "category": "food"
+        }
+    )        
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "pasta",
+            "amount": 240,
+            "category": "food"
+        }
+    )  
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "ramen",
+            "amount": 240,
+            "category": "food"
+        }
+    ) 
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "popcorn",
+            "amount": 240,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "bread",
+            "amount": 240,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201 
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "sweet corn",
+            "amount": 240,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "banana shake",
+            "amount": 240,
+            "category": "food"
+        }
+    ) 
+    assert response.status_code == 201 
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "paneer salad",
+            "amount": 240,
+            "category": "food"
+        }
+    ) 
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "veg salad",
+            "amount": 240,
+            "category": "food"
+        }
+    ) 
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "kadhai paneer",
+            "amount": 240,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "paneer butter masala",
+            "amount": 240,
+            "category": "food"
+        }
+    ) 
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "garlic paneer",
+            "amount": 240,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201            
+
+    response = client.get("/expenses", headers=auth_headers)
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert len(data["expenses"]) == 10
+    assert data["pagination"]["page"] == 1
+    assert data["pagination"]["per_page"] == 10
+    assert data["pagination"]["total"] == 12
+    assert data["pagination"]["pages"] ==2
+
+
+def test_custom_page_size(client, auth_headers):
+    response = client.get("/expenses?per_page=5", headers = auth_headers)
+
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["pagination"]["per_page"] == 5
+    assert len(data["expenses"]) <= 5
+
+
+
+def test_second_page(client, auth_headers):
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "popcorn",
+            "amount": 240,
+            "category": "food"
+        }
+    ) 
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "bread",
+            "amount": 240,
+            "category": "food"
+        }
+    )  
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "sweet corn",
+            "amount": 240,
+            "category": "food"
+        }
+    )   
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "banana shake",
+            "amount": 240,
+            "category": "food"
+        }
+    )     
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "paneer salad",
+            "amount": 240,
+            "category": "food"
+        }
+    )  
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "veg salad",
+            "amount": 240,
+            "category": "food"
+        }
+    )   
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "kadhai paneer",
+            "amount": 240,
+            "category": "food"
+        }
+    ) 
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "paneer butter masala",
+            "amount": 240,
+            "category": "food"
+        }
+    )  
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers = auth_headers,
+        json = {
+            "name": "garlic paneer",
+            "amount": 240,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    page2_response = client.get("/expenses?page=2&per_page=5", headers = auth_headers)
+
+    assert page2_response.status_code == 200
+
+    page2_data = page2_response.get_json()
+
+    assert page2_data["pagination"]["page"] == 2
+    assert page2_data["pagination"]["total"] > 5
+    assert len(page2_data["expenses"]) == 5
+
+
+    page1_response = client.get("/expenses?page=1&per_page=5", headers = auth_headers)
+
+    assert page1_response.status_code == 200
+
+    page1_data = page1_response.get_json()
+
+    page1_ids = {expense["id"] for expense in page1_data["expenses"]}
+    page2_ids = {expense["id"] for expense in page2_data["expenses"]}
+
+    assert page1_ids.isdisjoint(page2_ids)
+
+
+def test_pagination_metadata(client, auth_headers):
+    client.delete("/expenses/1", headers = auth_headers)
+
+    response = client.get("/expenses", headers = auth_headers)
+
+    data = response.get_json()
+
+    assert data["pagination"]["page"] == 1
+    assert data["pagination"]["per_page"] == 10
+    assert data["pagination"]["total"] == 0
+    assert data["pagination"]["pages"] == 0
+
+
+
+def test_invalid_page(client, auth_headers):
+    response = client.get("/expenses?page=0", headers = auth_headers)
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid Page number"
+
+
+def test_invalid_page_type(client, auth_headers):
+    response = client.get("/expenses?page=abc", headers = auth_headers)
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Page must be an integer"
+
+
+def test_invalid_page_size(client, auth_headers):
+    response = client.get("/expenses?per_page=101", headers = auth_headers)
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid per_page number"
+
+
+def test_no_matching_expenses(client, auth_headers):
+    response = client.get("/expenses?category=shopping", headers = auth_headers)
+
+    assert response.status_code == 200
+    assert response.get_json()["expenses"] == []
+    assert response.get_json()["pagination"]["pages"] == 0
+    assert response.get_json()["pagination"]["total"] == 0
+
+
+def test_pagination_with_filter(client, auth_headers):
+    client.delete("/expenses/1", headers = auth_headers)
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "burger",
+            "amount": 350,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "pizza",
+            "amount": 350,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "cloths",
+            "amount": 350,
+            "category": "shopping"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "taxi",
+            "amount": 350,
+            "category": "transport"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.get("/expenses?category=food&page=1&per_page=2", headers = auth_headers)
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert len(data["expenses"]) == 2
+    for expense in data["expenses"]:
+        assert expense["category"] == "food"
+    assert data["pagination"]["total"] == 2

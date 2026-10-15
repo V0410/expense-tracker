@@ -7,6 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from flask import current_app
+from sqlalchemy import func, select
+import math
 
 
 expenses_bp = Blueprint("expenses",__name__)
@@ -22,6 +24,8 @@ def get_expenses():
     category = request.args.get("category")
     min_amount = request.args.get("min_amount")
     month = request.args.get("month")
+    page = (request.args.get("page"))
+    per_page = (request.args.get("per_page"))
 
     if category and category not in allowed_categories:
         return {"error": "Invalid Category"}, 400
@@ -41,22 +45,56 @@ def get_expenses():
         except ValueError:
             return {"error": "Invalid Month Format. Use YYYY-MM"}, 400
 
-    statement = db.select(Expense).where(Expense.user_id == current_user_id)
+    if page is None:
+        page = 1
+    else:
+        try:
+            page = int(page)
+        except ValueError:
+            return {"error": "Page must be an integer"}, 400
+
+    if per_page is None:
+        per_page = 10
+    else:
+        try:
+            per_page = int(per_page)
+        except ValueError:
+            return {"error": "Per_page must be an integer"}, 400
+
+    if page < 1:
+        return {"error": "Invalid Page number"}, 400
+
+    if per_page < 1 or per_page > 100:
+        return {"error": "Invalid per_page number"}, 400
+
+    # statement = db.select(Expense).where(Expense.user_id == current_user_id)
+
+    conditions = [Expense.user_id == current_user_id]
 
     if category:
-        statement = statement.where(
-            Expense.category == category
-        )
+        conditions.append(Expense.category == category)
 
     if min_amount is not None:
-        statement = statement.where(
-            Expense.amount >= min_amount
-        )
+        conditions.append(Expense.amount >= min_amount)
 
     if month:
-        statement = statement.where(
-            Expense.date.like(f"{month}%")
+        conditions.append(Expense.date.like(f"{month}%"))
+
+    statement = (
+        select(Expense)
+        .where(*conditions)
+        .order_by(Expense.id)
         )
+
+    total_statement = select(func.count(Expense.id)).where(*conditions)
+
+    total_expenses = db.session.execute(total_statement).scalar()
+
+    total_pages = math.ceil(total_expenses / per_page)
+
+    offset = (page - 1) * per_page
+
+    statement = statement.limit(per_page).offset(offset)
 
     expenses = db.session.execute(statement).scalars().all()
 
@@ -71,7 +109,17 @@ def get_expenses():
         })
 
 
-    return expenses_dict, 200
+    # return expenses_dict, 200
+
+    return {
+        "expenses": expenses_dict,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total_expenses,
+            "pages": total_pages
+        }
+    }, 200
     
 
 
