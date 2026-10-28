@@ -1111,3 +1111,295 @@ def test_pagination_with_filter(client, auth_headers):
     for expense in data["expenses"]:
         assert expense["category"] == "food"
     assert data["pagination"]["total"] == 2
+
+
+
+def test_correct_total(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "burger",
+            "amount": 350,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "clothes",
+            "amount": 300,
+            "category": "shopping"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.get(
+        "/reports/total", headers=auth_headers
+    )
+
+    assert response.status_code == 200
+
+    assert response.get_json()["total_spending"] == 650
+
+
+
+def test_no_expenses(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    response = client.get("/reports/total", headers=auth_headers)
+
+    assert response.status_code == 200
+
+    assert response.get_json()["total_spending"] == 0
+
+
+
+def test_user_isolation_reports_total(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "burger",
+            "amount": 350,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "pizza",
+            "amount": 300,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/register",
+        json = {
+            "user_name": "test_user",
+            "password": "123"
+        }
+    )    
+
+    assert response.status_code == 201
+
+    response = client.post(
+        "/login",
+        json = {
+            "user_name": "test_user",
+            "password": "123"
+        }
+    )
+
+    assert response.status_code == 200
+
+    access_token = response.get_json()["access_token"]
+
+    user_b_headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = client.post(
+        "/expenses", headers=user_b_headers,
+        json= {
+            "name": "dosa",
+            "amount": 150,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.get("/reports/total", headers=auth_headers)
+
+    assert response.status_code == 200
+
+    assert response.get_json()["total_spending"] == 650
+    
+
+
+def test_correct_category_totals(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "burger",
+            "amount": 200,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "pizza",
+            "amount": 200,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "clothes",
+            "amount": 250,
+            "category": "shopping"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.get("reports/categories", headers=auth_headers)
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    totals = {
+        item["category"]: item["total"]
+        for item in data["categories"]
+    }
+
+    assert totals == {
+        "food": 400,
+        "shopping": 250
+    }
+
+    
+
+
+def test_no_expenses(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    response = client.get("/reports/categories", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.get_json()["categories"] == []
+
+
+
+def test_user_isolation_reports_categories(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "burger",
+            "amount": 350,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/expenses", headers=auth_headers,
+        json= {
+            "name": "clothes",
+            "amount": 300,
+            "category": "shopping"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.post(
+        "/register",
+        json = {
+            "user_name": "test_user",
+            "password": "123"
+        }
+    )    
+
+    assert response.status_code == 201
+
+    response = client.post(
+        "/login",
+        json = {
+            "user_name": "test_user",
+            "password": "123"
+        }
+    )
+
+    assert response.status_code == 200
+
+    access_token = response.get_json()["access_token"]
+
+    user_b_headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = client.post(
+        "/expenses", headers=user_b_headers,
+        json= {
+            "name": "dosa",
+            "amount": 150,
+            "category": "food"
+        }
+    )
+    assert response.status_code == 201
+
+    response = client.get("/reports/categories", headers=auth_headers)
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    totals = {
+        item["category"]: item["total"]
+        for item in data["categories"]
+    }
+
+    assert totals == {
+        "food": 350,
+        "shopping": 300
+    }
+
+
+
+from datetime import date
+
+
+def test_monthly_spending_total(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    for name, amount in [("burger", 200), ("pizza", 300)]:
+        response = client.post(
+            "/expenses",
+            headers=auth_headers,
+            json={
+                "name": name,
+                "amount": amount,
+                "category": "food"
+            }
+        )
+        assert response.status_code == 201
+
+    response = client.get(
+        "/reports/monthly",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+    current_month = date.today().strftime("%Y-%m")
+
+    assert data["monthly_spending"] == [
+        {"month": current_month, "total": 500.0}
+    ]
+
+
+def test_monthly_spending_no_expenses(client, auth_headers):
+    client.delete("/expenses/1", headers=auth_headers)
+
+    response = client.get(
+        "/reports/monthly",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["monthly_spending"] == []

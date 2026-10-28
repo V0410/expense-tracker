@@ -31,6 +31,9 @@ def create_app(config=DevelopmentConfig, db_path=None):
     # blueprints
     from app.routes import expenses_bp
     app.register_blueprint(expenses_bp)
+    
+    from app.reports import reports_bp
+    app.register_blueprint(reports_bp)
 
     return app
 
